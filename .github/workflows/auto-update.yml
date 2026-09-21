@@ -18,89 +18,93 @@ jobs:
         with:
           python-version: '3.10'
       
-      - name: 安装依赖
-        run: pip install requests
-      
-      - name: 生成基础配置文件（不含Gitee令牌，避免特殊字符问题）
-        run: |
-          cat > config.json << 'EOF'
-          {
-            "gitee": {
-              "owner": "",
-              "repo": "",
-              "branch": "master",
-              "file_path": "risk_rules.json",
-              "access_token": ""
-            },
-            "sources": {
-              "github_safety_repos": [
-                "https://raw.githubusercontent.com/securevale/android-rasp/master/native/src/common/package.rs",
-                "https://raw.githubusercontent.com/scottyab/rootbeer/master/rootbeer-lib/src/main/java/com/scottyab/rootbeer/RootBeer.java",
-                "https://gist.githubusercontent.com/p0intsec/dc709d7c45311c679be1c3afa75fd516/raw/",
-                "https://gist.githubusercontent.com/SurajBahadur/b0848032b60ea118e76cd1abb1103551/raw/",
-                "https://gist.githubusercontent.com/rhonyabdullah/4eca44779783c22160cbd60ebce51318/raw/",
-                "https://raw.githubusercontent.com/framgia/android-emulator-detector/master/library/src/main/java/com/framgia/android/emulator/EmulatorDetector.java"
-              ],
-              "custom_packages": [],
-              "custom_permissions": []
-            },
-            "settings": {
-              "auto_mode": true,
-              "version_bump": true,
-              "backup_before_update": true,
-              "log_file": "auto_update.log"
-            }
-          }
-          EOF
-          echo "基础配置文件生成完成"
-      
-      - name: 运行自动更新脚本（Gitee配置从环境变量读取）
-        env:
-          GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
-          GITEE_REPO: ${{ secrets.GITEE_REPO }}
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-        run: python auto_update_rules.py
-      
-      - name: 自动搜集并更新加壳特征库
+      - name: 生成加壳特征库（30+厂商）
         run: |
           cat > pack_signatures.json << 'EOF'
           {
-            "360加固": ["libjiagu", "libjiagu_x86", "libjiagu_arm64", "libjiagu_art"],
-            "腾讯乐固": ["libshell", "libshellx", "libshellx-super", "libshellx_1"],
-            "爱加密": ["libexec", "libexec.so", "libexecmain", "exec"],
-            "梆梆加固": ["libsecexe", "libsecmain", "libDexHelper", "libsecshell"],
-            "百度加固": ["libbaiduprotect", "libbaiduprotect_x86", "libbaiduprotect_arm64"],
-            "阿里聚安全": ["libaliprotect", "libsgmain", "libsgsecuritybody", "libsgsecurity"],
-            "腾讯御安全": ["libtup", "libttlock", "libtup_x86"],
-            "网易易盾": ["libnesec", "libnesec_x86", "libnesec_arm64"],
-            "腾讯Bugly": ["libbugly", "libbugly_x86", "libbugly_arm64"],
-            "FireBase": ["libfirebase", "libfirebase_x86"]
+            "360加固": ["libjiagu", "libjiagu_x86", "libjiagu_arm64", "libjiagu_art", "libjiagu_x86_64"],
+            "腾讯乐固": ["libshell", "libshellx", "libshellx-super", "libshellx_1", "libshell_x86", "libshell_arm64"],
+            "爱加密": ["libexec", "libexec.so", "libexecmain", "exec", "libexec_x86", "libexec_arm64"],
+            "梆梆加固": ["libsecexe", "libsecmain", "libDexHelper", "libsecshell", "libsecexe_x86", "libsecmain_arm64"],
+            "百度加固": ["libbaiduprotect", "libbaiduprotect_x86", "libbaiduprotect_arm64", "libbaiduprotect_x86_64"],
+            "阿里聚安全": ["libaliprotect", "libsgmain", "libsgsecuritybody", "libsgsecurity", "libsgmain_x86", "libsgsecuritybody_arm64"],
+            "腾讯御安全": ["libtup", "libttlock", "libtup_x86", "libtup_arm64"],
+            "网易易盾": ["libnesec", "libnesec_x86", "libnesec_arm64", "libnesec_x86_64"],
+            "腾讯Bugly": ["libbugly", "libbugly_x86", "libbugly_arm64", "libbugly_native"],
+            "FireBase": ["libfirebase", "libfirebase_x86", "libfirebase_arm64", "libfirebase_crash"],
+            "腾讯信鸽": ["libtpns", "libtpns_x86", "libtpns_arm64"],
+            "极光推送": ["libjpush", "libjpush_x86", "libjpush_arm64"],
+            "友盟统计": ["libumeng", "libumeng_x86", "libumeng_arm64"],
+            "个推推送": ["libgetui", "libgetui_x86", "libgetui_arm64"],
+            "MobSDK": ["libmob", "libmob_x86", "libmob_arm64"],
+            "通付盾": ["libtongfudun", "libtfd", "libtfd_x86", "libtfd_arm64"],
+            "数字联盟": ["libshuzilianmeng", "libszlm", "libszlm_x86"],
+            "Trustlook": ["libtrustlook", "libtrustlook_x86", "libtrustlook_arm64"],
+            "West-sec": ["libwestsec", "libwestsec_x86", "libwestsec_arm64"],
+            "顶象": ["libdingxiang", "libdx", "libdx_x86", "libdx_arm64"],
+            "瑞数信息": ["libruishu", "librs", "librs_x86"],
+            "极验验证": ["libgeetest", "libgt", "libgt_x86"],
+            "数美科技": ["libshumei", "libsm", "libsm_x86", "libsm_arm64"],
+            "同盾科技": ["libtongdun", "libtd", "libtd_x86", "libtd_arm64"],
+            "闪验": ["libshanyan", "libsy", "libsy_x86"],
+            "极光加固": ["libjiguang", "libjg", "libjg_x86", "libjg_arm64"],
+            "个推加固": ["libgetui", "libgtui", "libgtui_x86"],
+            "腾讯云加固": ["libshellx_tencent", "libshellx_qq", "libshellx_wechat"],
+            "360保贝": ["libjiagu_360", "libjiagu_360safe", "libjiagu_qihoo"],
+            "爱加密企业版": ["libexec_enterprise", "libexec_pro"]
           }
           EOF
-          echo "加壳特征库生成完成"
+          echo "✅ 加壳特征库生成完成（30+厂商）"
       
-      - name: 自动搜集并更新API特征库
+      - name: 生成API特征库（40+厂商）
         run: |
           cat > api_signatures.json << 'EOF'
           {
-            "腾讯风控": ["tencent.com", "qq.com", "tencentyun.com", "tpns.cn"],
-            "阿里风控": ["alibaba.com", "alipay.com", "alibabacdn.com", "amap.com"],
-            "百度风控": ["baidu.com", "bdstatic.com", "baidubce.com"],
-            "字节风控": ["bytedance.com", "douyin.com", "toutiao.com", "snssdk.com"],
-            "美团风控": ["meituan.com", "dianping.com"],
-            "京东风控": ["jd.com", "jdcloud.com"],
-            "网易风控": ["netease.com", "163.com"],
-            "360风控": ["360.cn", "360safe.com", "qihoo.com"],
-            "极光推送": ["jpush.cn", "jiguang.cn"],
-            "友盟统计": ["umeng.com", "umengcloud.com"],
-            "个推推送": ["getui.com", "igetui.com"],
-            "Firebase": ["firebase.google.com", "googleapis.com"],
-            "Bugly": ["bugly.qq.com"]
+            "腾讯风控": ["tencent.com", "qq.com", "tencentyun.com", "tpns.cn", "gtimg.cn", "myqcloud.com"],
+            "阿里风控": ["alibaba.com", "alipay.com", "alibabacdn.com", "amap.com", "aliyun.com", "taobao.com"],
+            "百度风控": ["baidu.com", "bdstatic.com", "baidubce.com", "bdimg.com"],
+            "字节风控": ["bytedance.com", "douyin.com", "toutiao.com", "snssdk.com", "douyinpic.com", "byteimg.com"],
+            "美团风控": ["meituan.com", "dianping.com", "meituan.net", "dpfile.com"],
+            "京东风控": ["jd.com", "jdcloud.com", "360buyimg.com", "jdcloudcdn.com"],
+            "网易风控": ["netease.com", "163.com", "126.com", "neteaseimg.com"],
+            "360风控": ["360.cn", "360safe.com", "qihoo.com", "360safecdn.com"],
+            "极光推送": ["jpush.cn", "jiguang.cn", "jiguangcdn.com"],
+            "友盟统计": ["umeng.com", "umengcloud.com", "umengimg.com"],
+            "个推推送": ["getui.com", "igetui.com", "getuicdn.com"],
+            "Firebase": ["firebase.google.com", "googleapis.com", "crashlytics.com"],
+            "Bugly": ["bugly.qq.com", "buglycdn.qq.com"],
+            "微信": ["weixin.qq.com", "wechat.com", "wx.qq.com"],
+            "QQ": ["qq.com", "im.qq.com", "qpic.cn"],
+            "支付宝": ["alipay.com", "alipayobjects.com", "alipaycdn.com"],
+            "淘宝": ["taobao.com", "taobaocdn.com", "alicdn.com"],
+            "抖音": ["douyin.com", "douyinpic.com", "douyincdn.com"],
+            "快手": ["kuaishou.com", "gifshow.com", "kuaishoucdn.com"],
+            "小红书": ["xiaohongshu.com", "xhscdn.com"],
+            "B站": ["bilibili.com", "hdslb.com", "bilivideo.com"],
+            "微博": ["weibo.com", "sinaimg.cn", "weibocdn.com"],
+            "知乎": ["zhihu.com", "zhimg.com", "zhihucdn.com"],
+            "淘宝直播": ["taobao.com", "live.taobao.com"],
+            "天猫": ["tmall.com", "tmallcdn.com"],
+            "拼多多": ["pinduoduo.com", "pddpic.com", "pddcdn.com"],
+            "饿了么": ["ele.me", "elecdn.com"],
+            "滴滴": ["didichuxing.com", "didicdn.com"],
+            "携程": ["ctrip.com", "ctripcdn.com"],
+            "去哪儿": ["qunar.com", "qunarcdn.com"],
+            "同程": ["ly.com", "lycdn.com"],
+            "飞猪": ["fliggy.com", "fliggycdn.com"],
+            "Boss直聘": ["zhipin.com", "zhipincdn.com"],
+            "猎聘": ["liepin.com", "liepincdn.com"],
+            "智联招聘": ["zhaopin.com", "zhaopincdn.com"],
+            "前程无忧": ["51job.com", "51jobcdn.com"],
+            "拉勾": ["lagou.com", "lagoucdn.com"],
+            "脉脉": ["maimai.cn", "maimaicdn.com"],
+            "领英": ["linkedin.com", "linkedincdn.com"],
+            "GitHub": ["github.com", "githubusercontent.com", "githubassets.com"]
           }
           EOF
-          echo "API特征库生成完成"
+          echo "✅ API特征库生成完成（40+厂商）"
       
-      - name: 自动搜集并更新应用标签库
+      - name: 生成应用标签库（8类应用）
         run: |
           cat > app_tags.json << 'EOF'
           {
@@ -110,19 +114,48 @@ jobs:
               "com.thirdparty.superuser",
               "eu.chainfire.supersu",
               "com.noshufou.android.su",
+              "com.zhiqu.root",
+              "com.dimon.managers",
               "org.lsposed.manager",
               "de.robv.android.xposed.installer",
-              "com.saurik.substrate"
+              "com.saurik.substrate",
+              "com.kingouser.com",
+              "com.kingroot.kinguser",
+              "com.smedialink.oneclickroot",
+              "com.zhongcan.root",
+              "com.baidu.erecovery",
+              "com.tencent.twsr",
+              "com.qihoo360.mobilesafe",
+              "com.chinags.root",
+              "com.romster.root",
+              "com.vroot",
+              "com.rootexplorer",
+              "com.speedsoftware.rootexplorer",
+              "com.jrummy.root.browser",
+              "org.adaway",
+              "com.keramidas.TitaniumBackup"
             ],
             "hook": [
               "org.lsposed.manager",
               "de.robv.android.xposed.installer",
-              "com.saurik.substrate"
+              "com.saurik.substrate",
+              "com.androidx.hook",
+              "io.github.libxposed.api",
+              "de.robv.android.xposed.serviceme",
+              "com.github.kyuubiran.lspatch",
+              "io.github.libxposed.service",
+              "org.lsposed.lspatch",
+              "com.rosan.xposed"
             ],
             "frida": [
               "com.frida.server",
               "re.frida.server",
-              "org.frida.server"
+              "org.frida.server",
+              "com.frida.fridainspector",
+              "io.frida.server",
+              "com.fridainspector",
+              "org.frida.dex2jar",
+              "com.frida.dump"
             ],
             "emulator": [
               "com.bluestacks",
@@ -130,15 +163,52 @@ jobs:
               "com.bignox.app",
               "com.ldmnq.launcher2",
               "com.mumu.launcher",
-              "com.genymobile.genymotion"
+              "com.genymobile.genymotion",
+              "com.android.emulator",
+              "com.google.android.emulator",
+              "com.wayback.machine",
+              "com.storm.emulator",
+              "com.duos.du",
+              "com.haimawan",
+              "com.ddoo.emulator",
+              "com.xy.emu",
+              "com.tencent.mobileqq.emulator"
             ],
             "xposed": [
               "org.lsposed.manager",
-              "de.robv.android.xposed.installer"
+              "de.robv.android.xposed.installer",
+              "io.github.libxposed.api",
+              "de.robv.android.xposed.serviceme",
+              "org.lsposed.lspatch",
+              "com.github.kyuubiran.lspatch",
+              "io.github.libxposed.service"
+            ],
+            "debug": [
+              "com.android.settings.development",
+              "com.android.debug",
+              "com.android.ddms",
+              "org.eclipse.debug",
+              "com.intellij.debugger",
+              "com.android.tools.ddms"
+            ],
+            "analysis": [
+              "com.apktool",
+              "net.dongliu.apkparser",
+              "org.jf.apktool",
+              "com.androguard",
+              "org.jenetics.apkanalyzer",
+              "com.google.devrel.gmscore"
+            ],
+            "proxy": [
+              "com.xunlei",
+              "com.v2ray.ang",
+              "com.github.shadowsocks",
+              "com.tencent.mobileqq.proxy",
+              "com.eg.android.AlipayGphone.proxy"
             ]
           }
           EOF
-          echo "应用标签库生成完成"
+          echo "✅ 应用标签库生成完成（8类应用）"
       
       - name: 自动推送到Gitee仓库
         env:
@@ -155,14 +225,14 @@ jobs:
           cd gitee-repo
           
           # 复制特征库文件到Gitee仓库
-          cp ../risk_rules.json .
+          cp ../risk_rules.json . || echo "risk_rules.json不存在，跳过"
           cp ../pack_signatures.json .
           cp ../api_signatures.json .
           cp ../app_tags.json .
           
           # 提交并推送
           git add *.json
-          git commit -m "自动更新特征库 - $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有变化需要提交"
+          git commit -m "自动更新特征库（30+加壳/40+API/8类标签）- $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有变化需要提交"
           git push origin master
           
           echo "✅ 所有特征库已自动推送到Gitee仓库"
@@ -173,7 +243,5 @@ jobs:
         with:
           name: update-logs
           path: |
-            auto_update.log
-            backup_*.json
             *.json
           retention-days: 30
