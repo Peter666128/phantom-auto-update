@@ -2,10 +2,67 @@ name: 幻影核心 - 特征库自动更新
 
 on:
   schedule:
-    - cron: '0 19 * * *'
+    - cron: '0 19 * * *'  # UTC 19点 = 北京时间凌晨3点
   workflow_dispatch:
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    ...
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: 生成配置文件
+        run: |
+          python3 -c "
+          import json
+          config = {
+            'gitee': {
+              'owner': '${{ secrets.GITEE_OWNER }}',
+              'repo': '${{ secrets.GITEE_REPO }}',
+              'branch': 'master',
+              'file_path': 'risk_rules.json',
+              'access_token': '${{ secrets.GITEE_TOKEN }}'
+            },
+            'sources': {
+              'github_safety_repos': [
+                'https://raw.githubusercontent.com/securevale/android-rasp/master/native/src/common/package.rs',
+                'https://raw.githubusercontent.com/scottyab/rootbeer/master/rootbeer-lib/src/main/java/com/scottyab/rootbeer/RootBeer.java',
+                'https://gist.githubusercontent.com/p0intsec/dc709d7c45311c679be1c3afa75fd516/raw/',
+                'https://gist.githubusercontent.com/SurajBahadur/b0848032b60ea118e76cd1abb1103551/raw/',
+                'https://gist.githubusercontent.com/rhonyabdullah/4eca44779783c22160cbd60ebce51318/raw/',
+                'https://raw.githubusercontent.com/framgia/android-emulator-detector/master/library/src/main/java/com/framgia/android/emulator/EmulatorDetector.java'
+              ],
+              'custom_packages': [],
+              'custom_permissions': []
+            },
+            'settings': {
+              'auto_mode': True,
+              'version_bump': True,
+              'backup_before_update': True,
+              'log_file': 'auto_update.log'
+            }
+          }
+          with open('config.json', 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+          print('配置文件生成完成')
+          "
+      
+      - name: 运行自动更新脚本
+        run: python auto_update_rules.py
+      
+      - name: 上传日志和备份
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: update-logs
+          path: |
+            auto_update.log
+            backup_*.json
+          retention-days: 30
