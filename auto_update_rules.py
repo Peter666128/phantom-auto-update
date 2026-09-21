@@ -250,22 +250,37 @@ def merge_features(old_rules: Dict, new_features: Dict) -> tuple:
 
 # ============== Gitee操作 ==============
 def get_gitee_file(config: Dict) -> Dict:
-    """从Gitee获取当前文件内容"""
+    """从Gitee获取当前文件内容（带浏览器请求头绕过WAF）"""
     gitee = config["gitee"]
     url = f"https://gitee.com/api/v5/repos/{gitee['owner']}/{gitee['repo']}/contents/{gitee['file_path']}"
     params = {"ref": gitee["branch"], "access_token": gitee["access_token"]}
-    resp = requests.get(url, params=params)
-    if resp.status_code == 200:
-        import base64
-        data = resp.json()
-        content = base64.b64decode(data["content"]).decode("utf-8")
-        return json.loads(content), data.get("sha", "")
-    else:
-        logging.error(f"获取Gitee文件失败: {resp.status_code} - {resp.text}")
-        return None, ""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Referer": "https://gitee.com/",
+        "Connection": "keep-alive"
+    }
+    # 重试3次
+    for i in range(3):
+        try:
+            resp = requests.get(url, params=params, headers=headers, timeout=30)
+            if resp.status_code == 200:
+                import base64
+                data = resp.json()
+                content = base64.b64decode(data["content"]).decode("utf-8")
+                return json.loads(content), data.get("sha", "")
+            else:
+                logging.warning(f"获取Gitee文件失败 ({i+1}/3): {resp.status_code} - {resp.text[:200]}")
+                time.sleep(2)
+        except Exception as e:
+            logging.warning(f"获取Gitee文件异常 ({i+1}/3): {e}")
+            time.sleep(2)
+    logging.error("获取Gitee文件失败，已重试3次")
+    return None, ""
 
 def push_to_gitee(config: Dict, content: str, sha: str = "") -> bool:
-    """推送文件到Gitee"""
+    """推送文件到Gitee（带浏览器请求头绕过WAF）"""
     gitee = config["gitee"]
     url = f"https://gitee.com/api/v5/repos/{gitee['owner']}/{gitee['repo']}/contents/{gitee['file_path']}"
     
@@ -281,20 +296,33 @@ def push_to_gitee(config: Dict, content: str, sha: str = "") -> bool:
     if sha:
         data["sha"] = sha
     
-    try:
-        if sha:
-            resp = requests.put(url, json=data)
-        else:
-            resp = requests.post(url, json=data)
-        if resp.status_code in [200, 201]:
-            logging.info("推送到Gitee成功！")
-            return True
-        else:
-            logging.error(f"推送到Gitee失败: {resp.status_code} - {resp.text}")
-            return False
-    except Exception as e:
-        logging.error(f"推送到Gitee异常: {e}")
-        return False
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Referer": "https://gitee.com/",
+        "Content-Type": "application/json;charset=UTF-8",
+        "Connection": "keep-alive"
+    }
+    
+    # 重试3次
+    for i in range(3):
+        try:
+            if sha:
+                resp = requests.put(url, json=data, headers=headers, timeout=30)
+            else:
+                resp = requests.post(url, json=data, headers=headers, timeout=30)
+            if resp.status_code in [200, 201]:
+                logging.info("推送到Gitee成功！")
+                return True
+            else:
+                logging.warning(f"推送到Gitee失败 ({i+1}/3): {resp.status_code} - {resp.text[:200]}")
+                time.sleep(2)
+        except Exception as e:
+            logging.warning(f"推送到Gitee异常 ({i+1}/3): {e}")
+            time.sleep(2)
+    logging.error("推送到Gitee失败，已重试3次")
+    return False
 
 # ============== 主流程 ==============
 def main():
