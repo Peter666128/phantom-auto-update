@@ -210,32 +210,43 @@ jobs:
           EOF
           echo "✅ 应用标签库生成完成（8类应用）"
       
-      - name: 自动推送到Gitee仓库
+      - name: 通过Gitee API上传文件到仓库
         env:
           GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
-          # 配置Git
-          git config --global user.name "phantom-bot"
-          git config --global user.email "phantom-bot@users.noreply.gitee.com"
+          # 上传pack_signatures.json
+          CONTENT=$(cat pack_signatures.json | base64 -w 0)
+          curl -X POST "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/pack_signatures.json" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"access_token\": \"${GITEE_TOKEN}\",
+              \"content\": \"${CONTENT}\",
+              \"message\": \"自动更新加壳特征库 - $(date +'%Y-%m-%d %H:%M:%S')\"
+            }" || echo "pack_signatures.json已存在，尝试更新..."
           
-          # 克隆Gitee仓库
-          git clone https://oauth2:${GITEE_TOKEN}@gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git gitee-repo
-          cd gitee-repo
+          # 上传api_signatures.json
+          CONTENT=$(cat api_signatures.json | base64 -w 0)
+          curl -X POST "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/api_signatures.json" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"access_token\": \"${GITEE_TOKEN}\",
+              \"content\": \"${CONTENT}\",
+              \"message\": \"自动更新API特征库 - $(date +'%Y-%m-%d %H:%M:%S')\"
+            }" || echo "api_signatures.json已存在，尝试更新..."
           
-          # 复制特征库文件到Gitee仓库
-          cp ../risk_rules.json . || echo "risk_rules.json不存在，跳过"
-          cp ../pack_signatures.json .
-          cp ../api_signatures.json .
-          cp ../app_tags.json .
+          # 上传app_tags.json
+          CONTENT=$(cat app_tags.json | base64 -w 0)
+          curl -X POST "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/app_tags.json" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"access_token\": \"${GITEE_TOKEN}\",
+              \"content\": \"${CONTENT}\",
+              \"message\": \"自动更新应用标签库 - $(date +'%Y-%m-%d %H:%M:%S')\"
+            }" || echo "app_tags.json已存在，尝试更新..."
           
-          # 提交并推送
-          git add *.json
-          git commit -m "自动更新特征库（30+加壳/40+API/8类标签）- $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有变化需要提交"
-          git push origin master
-          
-          echo "✅ 所有特征库已自动推送到Gitee仓库"
+          echo "✅ 所有特征库已通过Gitee API上传完成"
       
       - name: 上传日志和备份
         uses: actions/upload-artifact@v4
