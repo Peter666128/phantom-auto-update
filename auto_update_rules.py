@@ -18,12 +18,38 @@ from typing import Dict, List, Set, Any
 
 # ============== 配置加载 ==============
 def load_config(config_path: str = "config.json") -> Dict[str, Any]:
-    """加载配置文件"""
+    """加载配置文件，支持从环境变量读取Gitee配置（避免特殊字符问题）"""
     if not os.path.exists(config_path):
         print(f"[错误] 配置文件不存在: {config_path}")
         sys.exit(1)
     with open(config_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        config = json.load(f)
+    
+    # 从环境变量读取Gitee配置（优先级高于配置文件）
+    gitee_owner = os.environ.get("GITEE_OWNER", "").strip()
+    gitee_repo = os.environ.get("GITEE_REPO", "").strip()
+    gitee_token = os.environ.get("GITEE_TOKEN", "").strip()
+    
+    if gitee_owner:
+        config["gitee"]["owner"] = gitee_owner
+    if gitee_repo:
+        config["gitee"]["repo"] = gitee_repo
+    if gitee_token:
+        config["gitee"]["access_token"] = gitee_token
+    
+    # 验证Gitee配置
+    if not config.get("gitee", {}).get("owner"):
+        print("[错误] 未配置Gitee所有者（GITEE_OWNER）")
+        sys.exit(1)
+    if not config.get("gitee", {}).get("repo"):
+        print("[错误] 未配置Gitee仓库（GITEE_REPO）")
+        sys.exit(1)
+    if not config.get("gitee", {}).get("access_token"):
+        print("[错误] 未配置Gitee访问令牌（GITEE_TOKEN）")
+        sys.exit(1)
+    
+    print(f"[信息] Gitee配置: {config['gitee']['owner']}/{config['gitee']['repo']}")
+    return config
 
 # ============== 日志配置 ==============
 def setup_logging(log_file: str):
