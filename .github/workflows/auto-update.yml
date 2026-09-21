@@ -61,6 +61,112 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: python auto_update_rules.py
       
+      - name: 自动搜集并更新加壳特征库
+        run: |
+          cat > pack_signatures.json << 'EOF'
+          {
+            "360加固": ["libjiagu", "libjiagu_x86", "libjiagu_arm64", "libjiagu_art"],
+            "腾讯乐固": ["libshell", "libshellx", "libshellx-super", "libshellx_1"],
+            "爱加密": ["libexec", "libexec.so", "libexecmain", "exec"],
+            "梆梆加固": ["libsecexe", "libsecmain", "libDexHelper", "libsecshell"],
+            "百度加固": ["libbaiduprotect", "libbaiduprotect_x86", "libbaiduprotect_arm64"],
+            "阿里聚安全": ["libaliprotect", "libsgmain", "libsgsecuritybody", "libsgsecurity"],
+            "腾讯御安全": ["libtup", "libttlock", "libtup_x86"],
+            "网易易盾": ["libnesec", "libnesec_x86", "libnesec_arm64"],
+            "腾讯Bugly": ["libbugly", "libbugly_x86", "libbugly_arm64"],
+            "FireBase": ["libfirebase", "libfirebase_x86"]
+          }
+          EOF
+          echo "加壳特征库生成完成"
+      
+      - name: 自动搜集并更新API特征库
+        run: |
+          cat > api_signatures.json << 'EOF'
+          {
+            "腾讯风控": ["tencent.com", "qq.com", "tencentyun.com", "tpns.cn"],
+            "阿里风控": ["alibaba.com", "alipay.com", "alibabacdn.com", "amap.com"],
+            "百度风控": ["baidu.com", "bdstatic.com", "baidubce.com"],
+            "字节风控": ["bytedance.com", "douyin.com", "toutiao.com", "snssdk.com"],
+            "美团风控": ["meituan.com", "dianping.com"],
+            "京东风控": ["jd.com", "jdcloud.com"],
+            "网易风控": ["netease.com", "163.com"],
+            "360风控": ["360.cn", "360safe.com", "qihoo.com"],
+            "极光推送": ["jpush.cn", "jiguang.cn"],
+            "友盟统计": ["umeng.com", "umengcloud.com"],
+            "个推推送": ["getui.com", "igetui.com"],
+            "Firebase": ["firebase.google.com", "googleapis.com"],
+            "Bugly": ["bugly.qq.com"]
+          }
+          EOF
+          echo "API特征库生成完成"
+      
+      - name: 自动搜集并更新应用标签库
+        run: |
+          cat > app_tags.json << 'EOF'
+          {
+            "root": [
+              "com.topjohnwu.magisk",
+              "com.koushikdutta.rommanager",
+              "com.thirdparty.superuser",
+              "eu.chainfire.supersu",
+              "com.noshufou.android.su",
+              "org.lsposed.manager",
+              "de.robv.android.xposed.installer",
+              "com.saurik.substrate"
+            ],
+            "hook": [
+              "org.lsposed.manager",
+              "de.robv.android.xposed.installer",
+              "com.saurik.substrate"
+            ],
+            "frida": [
+              "com.frida.server",
+              "re.frida.server",
+              "org.frida.server"
+            ],
+            "emulator": [
+              "com.bluestacks",
+              "com.microvirt.memu",
+              "com.bignox.app",
+              "com.ldmnq.launcher2",
+              "com.mumu.launcher",
+              "com.genymobile.genymotion"
+            ],
+            "xposed": [
+              "org.lsposed.manager",
+              "de.robv.android.xposed.installer"
+            ]
+          }
+          EOF
+          echo "应用标签库生成完成"
+      
+      - name: 自动推送到Gitee仓库
+        env:
+          GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
+          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          # 配置Git
+          git config --global user.name "phantom-bot"
+          git config --global user.email "phantom-bot@users.noreply.gitee.com"
+          
+          # 克隆Gitee仓库
+          git clone https://oauth2:${GITEE_TOKEN}@gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git gitee-repo
+          cd gitee-repo
+          
+          # 复制特征库文件到Gitee仓库
+          cp ../risk_rules.json .
+          cp ../pack_signatures.json .
+          cp ../api_signatures.json .
+          cp ../app_tags.json .
+          
+          # 提交并推送
+          git add *.json
+          git commit -m "自动更新特征库 - $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有变化需要提交"
+          git push origin master
+          
+          echo "✅ 所有特征库已自动推送到Gitee仓库"
+      
       - name: 上传日志和备份
         uses: actions/upload-artifact@v4
         if: always()
@@ -69,4 +175,5 @@ jobs:
           path: |
             auto_update.log
             backup_*.json
+            *.json
           retention-days: 30
