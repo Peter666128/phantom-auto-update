@@ -18,43 +18,47 @@ jobs:
         with:
           python-version: '3.10'
       
-      - name: 生成配置文件
+      - name: 安装依赖
+        run: pip install requests
+      
+      - name: 生成基础配置文件（不含Gitee令牌，避免特殊字符问题）
         run: |
-          python3 -c "
-          import json
-          config = {
-            'gitee': {
-              'owner': '${{ secrets.GITEE_OWNER }}',
-              'repo': '${{ secrets.GITEE_REPO }}',
-              'branch': 'master',
-              'file_path': 'risk_rules.json',
-              'access_token': '${{ secrets.GITEE_TOKEN }}'
+          cat > config.json << 'EOF'
+          {
+            "gitee": {
+              "owner": "",
+              "repo": "",
+              "branch": "master",
+              "file_path": "risk_rules.json",
+              "access_token": ""
             },
-            'sources': {
-              'github_safety_repos': [
-                'https://raw.githubusercontent.com/securevale/android-rasp/master/native/src/common/package.rs',
-                'https://raw.githubusercontent.com/scottyab/rootbeer/master/rootbeer-lib/src/main/java/com/scottyab/rootbeer/RootBeer.java',
-                'https://gist.githubusercontent.com/p0intsec/dc709d7c45311c679be1c3afa75fd516/raw/',
-                'https://gist.githubusercontent.com/SurajBahadur/b0848032b60ea118e76cd1abb1103551/raw/',
-                'https://gist.githubusercontent.com/rhonyabdullah/4eca44779783c22160cbd60ebce51318/raw/',
-                'https://raw.githubusercontent.com/framgia/android-emulator-detector/master/library/src/main/java/com/framgia/android/emulator/EmulatorDetector.java'
+            "sources": {
+              "github_safety_repos": [
+                "https://raw.githubusercontent.com/securevale/android-rasp/master/native/src/common/package.rs",
+                "https://raw.githubusercontent.com/scottyab/rootbeer/master/rootbeer-lib/src/main/java/com/scottyab/rootbeer/RootBeer.java",
+                "https://gist.githubusercontent.com/p0intsec/dc709d7c45311c679be1c3afa75fd516/raw/",
+                "https://gist.githubusercontent.com/SurajBahadur/b0848032b60ea118e76cd1abb1103551/raw/",
+                "https://gist.githubusercontent.com/rhonyabdullah/4eca44779783c22160cbd60ebce51318/raw/",
+                "https://raw.githubusercontent.com/framgia/android-emulator-detector/master/library/src/main/java/com/framgia/android/emulator/EmulatorDetector.java"
               ],
-              'custom_packages': [],
-              'custom_permissions': []
+              "custom_packages": [],
+              "custom_permissions": []
             },
-            'settings': {
-              'auto_mode': True,
-              'version_bump': True,
-              'backup_before_update': True,
-              'log_file': 'auto_update.log'
+            "settings": {
+              "auto_mode": true,
+              "version_bump": true,
+              "backup_before_update": true,
+              "log_file": "auto_update.log"
             }
           }
-          with open('config.json', 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-          print('配置文件生成完成')
-          "
+          EOF
+          echo "基础配置文件生成完成"
       
-      - name: 运行自动更新脚本
+      - name: 运行自动更新脚本（Gitee配置从环境变量读取）
+        env:
+          GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
+          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: python auto_update_rules.py
       
       - name: 上传日志和备份
