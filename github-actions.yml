@@ -94,7 +94,7 @@ jobs:
             "https://gitee.com/api/v5/repos/werel666/phantom-rules/contents/app_update.json" \
             -H "Content-Type: application/json" \
             -d '{
-              "access_token": "你的Gitee访问令牌",
+              "access_token": "359cd1cf200a301ed0cc0d94dd801fc2",
               "content": "'"$CONTENT"'",
               "message": "自动同步APP更新信息到Gitee"
             }'
