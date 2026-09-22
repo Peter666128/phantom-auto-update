@@ -82,3 +82,22 @@ jobs:
         run: |
           echo "自动更新完成！查看日志了解详情。"
           # 如果需要微信/钉钉通知，可以在这里加webhook
+                - name: 自动同步app_update.json到Gitee
+        run: |
+          echo "正在同步app_update.json到Gitee..."
+          
+          # 读取GitHub上的app_update.json
+          CONTENT=$(base64 -w 0 app_update.json)
+          
+          # 用Gitee API更新文件
+          curl -X PUT \
+            "https://gitee.com/api/v5/repos/werel666/phantom-rules/contents/app_update.json" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "access_token": "你的Gitee访问令牌",
+              "content": "'"$CONTENT"'",
+              "message": "自动同步APP更新信息到Gitee"
+            }'
+          
+          echo "同步完成！"
+
